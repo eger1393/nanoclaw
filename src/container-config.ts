@@ -11,8 +11,8 @@
 import fs from 'fs';
 import path from 'path';
 
-import { GROUPS_DIR } from './config.js';
-import { getContainerConfig } from './db/container-configs.js';
+import { DEFAULT_AGENT_PROVIDER, GROUPS_DIR } from './config.js';
+import { getContainerConfig, updateContainerConfigScalars } from './db/container-configs.js';
 import { getAgentGroup } from './db/agent-groups.js';
 import type { AgentGroup, ContainerConfigRow } from './types.js';
 
@@ -77,6 +77,11 @@ export function materializeContainerJson(agentGroupId: string): ContainerConfig 
 
   const row = getContainerConfig(agentGroupId);
   if (!row) throw new Error(`Container config not found for agent group: ${agentGroupId}`);
+
+  if (!row.provider && DEFAULT_AGENT_PROVIDER !== 'claude') {
+    updateContainerConfigScalars(agentGroupId, { provider: DEFAULT_AGENT_PROVIDER });
+    row.provider = DEFAULT_AGENT_PROVIDER;
+  }
 
   const config = configFromDb(row, group);
 
