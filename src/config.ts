@@ -13,6 +13,7 @@ const envConfig = readEnvFile([
   'ONECLI_API_KEY',
   'TZ',
   'NANOCLAW_DEFAULT_PROVIDER',
+  'NANOCLAW_AUTO_REGISTER_CHANNELS',
 ]);
 
 export const ASSISTANT_NAME = process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'Andy';
@@ -50,6 +51,19 @@ export const DEFAULT_AGENT_PROVIDER = (
   envConfig.NANOCLAW_DEFAULT_PROVIDER ||
   'claude'
 ).toLowerCase();
+
+function truthyEnv(value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) return defaultValue;
+  const normalized = value.trim().toLowerCase();
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  return defaultValue;
+}
+
+export const AUTO_REGISTER_CHANNELS = truthyEnv(
+  process.env.NANOCLAW_AUTO_REGISTER_CHANNELS || envConfig.NANOCLAW_AUTO_REGISTER_CHANNELS,
+  true,
+);
 
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

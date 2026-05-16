@@ -119,8 +119,8 @@ export interface ChannelAdapter {
    *         (Discord, Slack, Linear, GitHub). One thread = one session; the
    *         agent replies into the originating thread.
    * false — adapter's platform treats the channel itself as the conversation
-   *         (Telegram, WhatsApp, iMessage). Thread ids are stripped at the
-   *         router; agent replies go to the channel.
+   *         (WhatsApp, iMessage). Thread ids are stripped at the router;
+   *         agent replies go to the channel.
    */
   supportsThreads: boolean;
 

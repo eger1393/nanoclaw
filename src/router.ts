@@ -19,6 +19,7 @@
  */
 import { getChannelAdapter } from './channels/channel-registry.js';
 import { gateCommand } from './command-gate.js';
+import { AUTO_REGISTER_CHANNELS } from './config.js';
 import { getAgentGroup } from './db/agent-groups.js';
 import { recordDroppedMessage } from './db/dropped-messages.js';
 import {
@@ -160,8 +161,8 @@ export async function routeInbound(event: InboundEvent): Promise<void> {
   // (e.g. free-text replies during multi-step approval flows).
   if (messageInterceptor && (await messageInterceptor(event))) return;
 
-  // 0. Apply the adapter's thread policy. Non-threaded adapters (Telegram,
-  //    WhatsApp, iMessage, email) collapse threads to the channel.
+  // 0. Apply the adapter's thread policy. Non-threaded adapters (WhatsApp,
+  //    iMessage, email) collapse threads to the channel.
   const adapter = getChannelAdapter(event.channelType);
   if (adapter && !adapter.supportsThreads) {
     event = { ...event, threadId: null };
@@ -178,6 +179,8 @@ export async function routeInbound(event: InboundEvent): Promise<void> {
   let mg: MessagingGroup;
   let agentCount: number;
   if (!found) {
+    if (!AUTO_REGISTER_CHANNELS) return;
+
     // No messaging_groups row. Auto-create only when the message warrants
     // attention (the bot was addressed — @mention or DM). Plain chatter in
     // channels we merely sit in stays silent — no row, no DB writes.
@@ -208,6 +211,8 @@ export async function routeInbound(event: InboundEvent): Promise<void> {
   // 1b. No wirings — either silent drop (plain chatter / denied channel) or
   //     escalate to owner for channel-registration approval.
   if (agentCount === 0) {
+    if (!AUTO_REGISTER_CHANNELS) return;
+
     if (!isMention) return;
     if (mg.denied_at) {
       log.debug('Message dropped — channel was denied by owner', {
