@@ -66,6 +66,26 @@ function isGroupPlatformId(platformId: string): boolean {
   return id.startsWith('-');
 }
 
+function disableTelegramLinkPreviews(adapter: unknown): void {
+  const target = adapter as {
+    telegramFetch?: (method: string, payload?: unknown, request?: unknown) => Promise<unknown>;
+  };
+  if (typeof target.telegramFetch !== 'function') return;
+
+  const original = target.telegramFetch.bind(adapter);
+  target.telegramFetch = (method, payload, request) => {
+    const isPlainPayload = payload && typeof payload === 'object' && !(payload instanceof FormData);
+    if (method === 'sendMessage' && isPlainPayload) {
+      payload = {
+        ...(payload as Record<string, unknown>),
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
+      };
+    }
+    return original(method, payload, request);
+  };
+}
+
 interface InboundFields {
   text: string;
   authorUserId: string | null;
@@ -204,6 +224,7 @@ registerChannelAdapter('telegram', {
       botToken: token,
       mode: 'polling',
     });
+    disableTelegramLinkPreviews(telegramAdapter);
     const bridge = createChatSdkBridge({
       adapter: telegramAdapter,
       concurrency: 'concurrent',
